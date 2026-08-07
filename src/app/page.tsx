@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <a href="#main-tabs" className="visually-hidden">
+      <a href="#main-tabs" className="skip-link">
         Skip to the tool
       </a>
 

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # The example file carries no secrets and should ship.
 !.env.example
+
+# Local audit artefacts
+audit-output/
