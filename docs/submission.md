@@ -55,10 +55,13 @@ A language model can be asked not to hedge and will hedge anyway; it has read an
 - "send me the dates" becoming "sorry, would you maybe be able to send the dates when you get a chance?" is **blocked**. It added three weakeners.
 - "send me the dates. To be clear, I am not annoyed, I need them to plan my half" is **allowed**. It added information and subtracted no force.
 - "Hope you're well! Quick question:" wrapped around an unchanged sentence is **blocked**. The core survived; the padding is still masking.
+- "You did not send the dates. Send them today." becoming "Send the dates today so I can finish by the deadline" is **blocked**. It adds no hedge whatsoever, but it deletes the sentence saying what happened.
+
+That last case is why the guard has two independent rules rather than one. Our first version only looked for added hedges, and during live testing a model returned exactly that deletion and walked straight through. Masking by subtraction is still masking. A revision must now reproduce the original verbatim and append to it.
 
 Adding explicit intent is self-advocacy. Adding hedges is masking. When the guard fires the user sees the block and the exact phrases it caught, not the softened text. A refusal you can see is worth more than a promise in a README.
 
-Eighteen tests cover it: thirteen on the guard itself, and five proving it is actually wired into the path that matters, so that a softened revision coming back from a live model call is intercepted and never reaches the caller. We mutation-tested that: bypassing the guard turns the suite red, restoring it turns it green. A green check that cannot fail is not evidence.
+Twenty-one tests cover it: sixteen on the guard itself, and five proving it is actually wired into the path that matters, so that a softened revision coming back from a live model call is intercepted and never reaches the caller. We mutation-tested that: bypassing the guard turns the suite red, restoring it turns it green. A green check that cannot fail is not evidence.
 
 ### How neurodivergent users were involved, honestly
 
@@ -97,8 +100,8 @@ Track 2: AI for Connection and Wellbeing.
 
 ## Repository
 
-Public GitHub link goes here.
+https://github.com/tarang-tj/subtext
 
 ## Live demo
 
-Vercel link goes here.
+https://subtext-tarangjammalamadaka9-4586s-projects.vercel.app

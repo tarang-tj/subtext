@@ -79,10 +79,41 @@ describe("checkForMasking", () => {
     expect(verdict.allowed).toBe(true);
   });
 
-  it("allows a revision that removes hedging", () => {
+  it("blocks the exact deletion a live model produced", () => {
+    // Observed in production before the preservation rule existed. The model
+    // added no hedge, so the weakener check cleared it, while it quietly
+    // deleted the sentence stating what had happened.
+    const verdict = checkForMasking(
+      "You did not send the dates. Send them today so I can finish my part.",
+      "Send the dates today so I can finish my part by the deadline.",
+    );
+    expect(verdict.allowed).toBe(false);
+    if (verdict.allowed) throw new Error("expected a block");
+    expect(verdict.reason).toMatch(/changed or removed/i);
+  });
+
+  it("blocks a revision that drops one sentence and keeps the rest", () => {
+    const verdict = checkForMasking(
+      "You did not send the dates. Send them today so I can finish my part.",
+      "Send them today so I can finish my part.",
+    );
+    expect(verdict.allowed).toBe(false);
+  });
+
+  it("blocks a re-wording even when it adds no weakener and loses no meaning", () => {
+    // Subtext offers to add context. It does not offer to rewrite people.
+    // De-hedging someone's own words is still a rewrite, so it fails closed.
     const verdict = checkForMasking(
       "Sorry, I was just wondering if maybe you could send the dates?",
       "Please send the dates today.",
+    );
+    expect(verdict.allowed).toBe(false);
+  });
+
+  it("ignores punctuation and case when checking preservation", () => {
+    const verdict = checkForMasking(
+      "Send me the dates.",
+      "send me the dates -- I need them to plan my half",
     );
     expect(verdict.allowed).toBe(true);
   });

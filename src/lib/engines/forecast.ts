@@ -59,7 +59,7 @@ const FORECAST_SCHEMA: JsonSchema = {
     addContextVersion: {
       type: "object",
       description:
-        "An optional revision that ADDS explicit context or intent. It must not remove force, add hedges, add apologies, or make anything more tentative. If nothing useful can be added, return the original text unchanged.",
+        "The writer's original text reproduced verbatim, followed by appended context or intent. It must contain the original word for word. It must not remove force, drop a sentence, re-word anything, add hedges, add apologies, or make anything more tentative. If nothing useful can be added, return the original text unchanged.",
       properties: {
         text: { type: "string" },
         whatItAdds: {
@@ -88,8 +88,8 @@ Your grounding, which you must not contradict:
 
 Hard rules, in order of importance:
 1. NEVER make the message softer, gentler, more tentative, more apologetic, or more polite. Do not add "just", "maybe", "sorry", "I think", "if that's ok", or any similar padding. This is the single most important rule and it is not negotiable.
-2. The optional revision may ONLY add explicit context or state intent outright. For example, adding "to be clear, I am not annoyed, I want the deadline" is allowed because it adds information. Rewriting "send me the dates" as "sorry, would you maybe be able to send the dates?" is forbidden because it removes force.
-3. If you cannot add real information, return the original text unchanged as the revision.
+2. The revision must REPRODUCE THE WRITER'S ORIGINAL TEXT WORD FOR WORD, and then append the added context. Do not re-order it, do not re-word it, do not drop a sentence, do not fix their grammar. Copy it exactly, then add. For example "You did not send the dates. Send them today." may become "You did not send the dates. Send them today. To be clear, I am not annoyed, I need them to plan my half." It may NOT become "Send the dates today so I can finish by the deadline", because that deleted the first sentence. Deleting the blunt part is softening, which is forbidden by rule 1.
+3. If you cannot add real information, return the original text completely unchanged as the revision.
 4. Frame every predicted misreading as something the READER may get wrong. Never tell the writer they were unclear, harsh, or in need of improvement.
 5. Plain literal language. No idioms, no figures of speech. Short sentences. No exclamation marks.
 6. Do not ask the writer how they feel.

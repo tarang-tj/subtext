@@ -98,7 +98,7 @@ export type MaskingVerdict =
   | {
       allowed: false;
       profile: DirectnessProfile;
-      /** The specific phrases the revision tried to add. */
+      /** The specific phrases the revision tried to add. Empty for a deletion block. */
       addedPhrases: string[];
       /** Plain-language explanation shown to the user. */
       reason: string;
@@ -152,12 +152,41 @@ export function addedContentWords(original: string, revision: string): string[] 
   return [...added];
 }
 
+/** Reduce to comparable text: lowercase, strip punctuation, collapse spaces. */
+function forComparison(text: string): string {
+  return normalise(text)
+    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Is the revision purely additive?
+ *
+ * The product promises the optional revision ADDS explicit context. That makes
+ * the original a prefix, suffix, or interior run of the revision. Anything else
+ * is a rewrite, and a rewrite can soften by deletion.
+ *
+ * This was added after watching a live model turn "You did not send the dates.
+ * Send them today so I can finish my part." into "Send the dates today so I can
+ * finish my part by the deadline." It added no hedge, so the weakener check
+ * cleared it, but it quietly deleted the sentence stating what had happened.
+ * Masking by subtraction is still masking.
+ */
+export function preservesOriginal(original: string, revision: string): boolean {
+  const o = forComparison(original);
+  const r = forComparison(revision);
+  if (o.length === 0) return true;
+  return r.includes(o);
+}
+
 /**
  * Decide whether a suggested revision may be shown to the user.
  *
- * Fails closed: any net increase in weakening devices is a block, whatever else
- * the revision does. A revision that both adds context and adds hedging is
- * still a block, because the hedging is not necessary to add the context.
+ * Fails closed on two independent grounds: the revision may not add weakening
+ * devices, and it may not drop or reword what was already there. A revision
+ * that both adds context and adds hedging is still a block, because the hedging
+ * was never needed to add the context.
  */
 export function checkForMasking(
   original: string,
@@ -184,7 +213,25 @@ export function checkForMasking(
   tally(before.apologies, after.apologies);
   tally(before.softeners, after.softeners);
 
-  if (added.length === 0) return { allowed: true, profile: after };
+  // Weakeners are checked before preservation because naming the exact phrase
+  // that was added is more useful to the reader than a generic "this was
+  // reworded". A revision that both hedges and rewords reports the hedge.
+  if (added.length === 0) {
+    if (!preservesOriginal(original, revision)) {
+      return {
+        allowed: false,
+        profile: after,
+        addedPhrases: [],
+        reason:
+          "This rewrite changed or removed part of what you wrote instead of adding to it. " +
+          "Subtext only offers to add context, never to re-word you. Deleting the blunt part of a " +
+          "message is still softening it, and softening how you communicate is associated with " +
+          "anxiety, depression and thwarted belonging. What you wrote stands.",
+        citationIds: ["cage2019", "cassidy2020", "hancock"],
+      };
+    }
+    return { allowed: true, profile: after };
+  }
 
   const quoted = [...new Set(added)].map((p) => `"${p}"`).join(", ");
   return {

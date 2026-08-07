@@ -4,6 +4,9 @@
 
 Built for [IncludAI](https://includai-2026.devpost.com/), the neurodiversity hackathon run by IncludEDU in partnership with the Stanford Network for K-12 Neurodiversity Education and Advocacy. Track 2: AI for Connection and Wellbeing.
 
+**Try it: https://subtext-tarangjammalamadaka9-4586s-projects.vercel.app**  
+(No sign-up. Nothing you type is stored on a server.)
+
 ---
 
 ## The thesis, and the thing it is not
@@ -30,17 +33,22 @@ This is the part we would ask you to read the code for: [`src/lib/engines/maskin
 
 Camouflaging is associated with anxiety, depression and stress (Cage & Troxell-Whitman, 2019), and onward with thwarted belonging and lifetime suicidality (Cassidy et al., 2020). A tool that quietly rewrites a teenager's words to sound softer is not a communication aid. It is a masking machine with a friendly interface, and it is the single easiest thing to build by accident here.
 
-A language model can be *asked* not to hedge and will hedge anyway; it has read an enormous quantity of corporate email. So the promise is not kept in the prompt. It is kept in code that runs on every suggested revision before the revision is allowed near the screen, and it **fails closed**:
+A language model can be *asked* not to hedge and will hedge anyway; it has read an enormous quantity of corporate email. So the promise is not kept in the prompt. It is kept in code that runs on every suggested revision before the revision is allowed near the screen.
+
+It **fails closed** on two independent grounds. A revision may not **add weakeners**, and it may not **drop or reword** what was already there.
 
 | Change | Verdict |
 |---|---|
 | "send me the dates" → "sorry, would you maybe be able to send the dates when you get a chance?" | **Blocked.** Adds `sorry`, `maybe`, `whenever you get a chance`. |
 | "send me the dates" → "send me the dates. To be clear, I am not annoyed. I need them to plan my half." | **Allowed.** Adds information, subtracts no force. |
 | "Hope you're well! Quick question:" wrapped around an unchanged sentence | **Blocked.** The core survived; the padding is still masking. |
+| "You did not send the dates. Send them today." → "Send the dates today so I can finish by the deadline." | **Blocked.** Adds no hedge at all, but deletes the sentence saying what happened. |
 
-The distinction the whole product turns on: **adding explicit intent is self-advocacy. Adding hedges is masking.** When the guard fires, the user sees the block and the phrases it caught, rather than the softened text. A refusal you can see is worth more than a promise in a README.
+That last row is not hypothetical. It is what a live model actually returned during testing, and the first version of this guard let it through, because that version only looked for *added* hedges. Masking by subtraction is still masking. The rule now is that the revision must reproduce the original verbatim and append to it; anything else is a rewrite, and a rewrite can soften by deletion.
 
-Verified by 18 tests: 13 on the guard in [`masking-guard.test.ts`](src/lib/engines/masking-guard.test.ts), and 5 in [`forecast.test.ts`](src/lib/engines/forecast.test.ts) proving the guard is actually wired into the engine, so a softened revision returned by a live model is intercepted and never reaches the caller.
+The distinction the whole product turns on: **adding explicit intent is self-advocacy. Changing what you said is not Subtext's business.** When the guard fires, the user sees the block and the phrases it caught, rather than the softened text. A refusal you can see is worth more than a promise in a README.
+
+Verified by 21 tests: 16 on the guard in [`masking-guard.test.ts`](src/lib/engines/masking-guard.test.ts), and 5 in [`forecast.test.ts`](src/lib/engines/forecast.test.ts) proving the guard is actually wired into the engine, so a softened revision returned by a live model is intercepted and never reaches the caller.
 
 Both were mutation-tested: bypassing the guard turns the suite red, restoring it turns it green. A green check that cannot fail is not evidence of anything.
 
