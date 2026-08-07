@@ -140,7 +140,6 @@ ${context}
 
 If the context above is not specified, factor that missing context into your ambiguity rating rather than inventing it.`,
     schema: DECODE_SCHEMA,
-    temperature: 0.35,
   });
 
   const readings = [...(result.readings ?? [])].sort(

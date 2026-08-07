@@ -112,7 +112,6 @@ ${input.message}
 
 Who will read it: ${input.audience?.trim() || "not specified"}.`,
     schema: FORECAST_SCHEMA,
-    temperature: 0.35,
   });
 
   const misreadings = [...(raw.misreadings ?? [])].sort(

@@ -27,12 +27,16 @@ export class LlmError extends Error {
 /** JSON Schema subset we hand to the provider to constrain output. */
 export type JsonSchema = Record<string, unknown>;
 
+/**
+ * Note the absence of a temperature knob. Claude 5 rejects non-default sampling
+ * parameters outright, and the Gemini interactions endpoint is only documented
+ * to take model/input/response_format. Output shape is constrained by the JSON
+ * schema instead, which is the guarantee that actually matters here.
+ */
 type GenerateArgs = {
   system: string;
   user: string;
   schema: JsonSchema;
-  /** Lower is more deterministic. Decode wants restraint, not flourish. */
-  temperature?: number;
 };
 
 const GEMINI_ENDPOINT =
@@ -126,7 +130,9 @@ async function callGemini(args: GenerateArgs, signal: AbortSignal): Promise<stri
         mime_type: "application/json",
         schema: args.schema,
       },
-      generation_config: { temperature: args.temperature ?? 0.4 },
+      // Only fields verified against the current API reference are sent. An
+      // unrecognised key here is a 400 on the primary path, and determinism is
+      // not worth that trade on a schema-constrained call.
     }),
   });
 
@@ -152,8 +158,12 @@ async function callAnthropic(args: GenerateArgs, signal: AbortSignal): Promise<s
     },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL,
-      max_tokens: 2048,
-      temperature: args.temperature ?? 0.4,
+      // Claude 5 returns 400 on any non-default sampling parameter, so
+      // temperature/top_p/top_k are deliberately absent. Adaptive thinking is
+      // on by default and eats the budget, so max_tokens is generous rather
+      // than tight: a reasoning model on a small budget returns nothing at all
+      // rather than returning less.
+      max_tokens: 4096,
       system: `${args.system}\n\nReply with JSON matching this schema and nothing else:\n${JSON.stringify(args.schema)}`,
       messages: [{ role: "user", content: args.user }],
     }),
