@@ -84,6 +84,10 @@ No OpenDyslexic and no Comic Sans. A 2017 study found OpenDyslexic reduced readi
 
 There is no score, no streak, and nothing to get better at.
 
+None of that is asserted on trust. `npm run audit` drives real headless Chrome against the deployed site at 390, 768 and 1280 pixels, runs axe-core across WCAG 2.0/2.1/2.2 AA plus best-practice rules, checks for horizontal overflow, and asserts that the typography and touch-target numbers claimed above actually hold in the shipped CSS. Current result at all three widths: zero horizontal overflow, body computing to 17px on 28.05px line-height in Verdana on #f5f5f0, zero touch targets under 44px, and zero axe violations.
+
+It found a real defect on its first run. The skip link was permanently hidden, so a sighted keyboard user could focus it and see nothing. It is now a 48px target on focus. We verified the audit can actually fail by pointing it at the previous deployment, where it exits 1 with "no skip link on the page".
+
 ### Privacy
 
 No account, no database, no analytics, no telemetry. Message text goes to the model provider to be analysed and is not stored by Subtext. Preferences and correction notes stay in the browser. The intended users are minors pasting real conversations; anything else would have been indefensible.

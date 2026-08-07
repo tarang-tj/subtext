@@ -48,6 +48,10 @@ for (const vp of VIEWPORTS) {
     const offenders = [];
     for (const el of document.querySelectorAll("body *")) {
       const r = el.getBoundingClientRect();
+      // Parked far off-screen left is the standard way to hide a skip link
+      // until focus. That is deliberate, not a layout bug.
+      const deliberatelyParked = r.right < -1000;
+      if (deliberatelyParked) continue;
       if (r.right > window.innerWidth + 1 || r.left < -1) {
         offenders.push({
           tag: el.tagName.toLowerCase(),
@@ -64,6 +68,24 @@ for (const vp of VIEWPORTS) {
     };
   });
 
+  // A skip link is only useful in the state a keyboard user actually meets it:
+  // focused. Measuring it at rest tells you nothing.
+  const skipLink = await page.evaluate(() => {
+    const el = document.querySelector(".skip-link");
+    if (!el) return { present: false };
+    el.focus();
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return {
+      present: true,
+      onScreenWhenFocused: r.left >= 0 && r.top >= 0 && r.right <= window.innerWidth,
+      height: Math.round(r.height),
+      width: Math.round(r.width),
+      background: s.backgroundColor,
+      meetsTargetSize: r.height >= 44,
+    };
+  });
+
   // Touch targets and body typography, checked against the values the README claims.
   const metrics = await page.evaluate(() => {
     const body = getComputedStyle(document.body);
@@ -71,6 +93,7 @@ for (const vp of VIEWPORTS) {
     for (const el of document.querySelectorAll("button, a, input, textarea")) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) continue;
+      if (el.classList.contains("skip-link")) continue; // measured focused, below
       if (r.height < 44) {
         small.push({
           text: (el.textContent || el.tagName).trim().slice(0, 30),
@@ -96,10 +119,19 @@ for (const vp of VIEWPORTS) {
     (v) => v.impact === "serious" || v.impact === "critical",
   );
   seriousCount += serious.length;
+  // Bypass blocks is a WCAG 2.4.1 level A requirement, so an absent skip link
+  // is a failure, not a neutral result.
+  if (!skipLink.present) {
+    console.log("  FAIL: no skip link on the page (WCAG 2.4.1 bypass blocks).");
+    seriousCount += 1;
+  } else if (!skipLink.onScreenWhenFocused || !skipLink.meetsTargetSize) {
+    console.log("  FAIL: skip link does not become a visible, adequately sized target on focus.");
+    seriousCount += 1;
+  }
 
   await page.screenshot({ path: `${OUT}/${vp.name}.png`, fullPage: false });
 
-  report.push({ viewport: vp.name, width: vp.width, layout, metrics, axe: {
+  report.push({ viewport: vp.name, width: vp.width, layout, metrics, skipLink, axe: {
     violations: axe.violations.map((v) => ({
       id: v.id,
       impact: v.impact,
@@ -116,6 +148,7 @@ for (const vp of VIEWPORTS) {
   console.log(`  body type     : ${metrics.fontSize} / ${metrics.lineHeight} ${metrics.fontFamily}`);
   console.log(`  ground        : ${metrics.background} on ${metrics.color}`);
   console.log(`  targets <44px : ${metrics.undersizedTargets.length}`, metrics.undersizedTargets.slice(0, 4));
+  console.log(`  skip link     : ${skipLink.present ? `focused ${skipLink.width}x${skipLink.height}, on-screen ${skipLink.onScreenWhenFocused}, target-size ok ${skipLink.meetsTargetSize}` : "MISSING"}`);
   console.log(`  axe passes    : ${axe.passes.length}`);
   console.log(`  axe violations: ${axe.violations.length} (serious/critical: ${serious.length})`);
   for (const v of axe.violations) {

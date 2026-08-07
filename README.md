@@ -69,6 +69,23 @@ Every value traces to a source. The full 45-item checklist this was built agains
 
 There is no score, no streak, and nothing to get better at. Social skills programmes that measure success by provider satisfaction rather than the autistic person's wellbeing are exactly what autistic advocates have objected to.
 
+### Measured, not asserted
+
+`npm run audit` drives real headless Chrome against the deployed site at 390px, 768px and 1280px. It runs axe-core across WCAG 2.0, 2.1 and 2.2 AA plus best-practice rules, checks for horizontal overflow, and asserts the typography and touch-target numbers claimed above actually hold in the shipped CSS. It exits non-zero on any serious or critical finding, so it gates a release rather than decorating one.
+
+Current result at all three widths:
+
+```
+overflow      : none
+body type     : 17px / 28.05px Verdana
+ground        : rgb(245, 245, 240) on rgb(44, 44, 44)
+targets <44px : 0
+skip link     : focused 191x58, on-screen true, target-size ok true
+axe violations: 0 (serious/critical: 0)
+```
+
+The audit earned its keep on the first run by catching a real defect: the skip link was permanently visually-hidden, so a sighted keyboard user could focus it and see nothing. It is now a full 48px target on focus. The gate was verified by pointing it at the previous deployment, where it correctly fails with `no skip link on the page (WCAG 2.4.1 bypass blocks)` and exits 1.
+
 ## Honest limitation
 
 **Subtext was built from published research and autistic-authored writing. It has not yet been tested with an autistic teenager.** The hackathon ran one week and we could not arrange a session inside it.
