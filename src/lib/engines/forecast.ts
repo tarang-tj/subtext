@@ -39,7 +39,7 @@ const FORECAST_SCHEMA: JsonSchema = {
           whatTheyMightThink: {
             type: "string",
             description:
-              "The wrong conclusion a non-autistic reader may jump to. Attribute it to the reader: 'they may read this as...'.",
+              "The wrong conclusion a non-autistic reader may jump to, as a bare noun phrase with no introduction. Write 'blaming them for the delay', NOT 'they may read this as blaming them for the delay'. The interface supplies the framing.",
           },
           whatTriggersIt: {
             type: "string",
@@ -98,6 +98,22 @@ The writer's message is not a problem to be corrected. You are forecasting weath
 
 type RawForecast = Omit<ForecastResult, "citationIds" | "maskingBlock">;
 
+/**
+ * The interface already prints "They may read this as:" before each item. Models
+ * tend to repeat that framing inside the value regardless of what the schema
+ * says, producing "They may read this as: they may read this as blaming them".
+ * Asking nicely is not a fix, so this trims it.
+ */
+export function stripLeadingFraming(text: string): string {
+  const trimmed = (text ?? "").trim();
+  const stripped = trimmed.replace(
+    /^(?:that\s+)?(?:they|the reader|a reader|the recipient)\s+(?:may|might|could|will)\s+(?:read|see|take|interpret)\s+(?:this|it)\s+(?:as|to be)\s*:?\s*/i,
+    "",
+  );
+  if (stripped === trimmed || stripped.length === 0) return trimmed;
+  return stripped.charAt(0).toLowerCase() + stripped.slice(1);
+}
+
 export async function forecastMessage(input: {
   message: string;
   audience?: string;
@@ -114,9 +130,9 @@ Who will read it: ${input.audience?.trim() || "not specified"}.`,
     schema: FORECAST_SCHEMA,
   });
 
-  const misreadings = [...(raw.misreadings ?? [])].sort(
-    (a, b) => (b.likelihood ?? 0) - (a.likelihood ?? 0),
-  );
+  const misreadings = [...(raw.misreadings ?? [])]
+    .map((m) => ({ ...m, whatTheyMightThink: stripLeadingFraming(m.whatTheyMightThink) }))
+    .sort((a, b) => (b.likelihood ?? 0) - (a.likelihood ?? 0));
 
   const proposed = raw.addContextVersion?.text?.trim();
   let addContextVersion: ForecastResult["addContextVersion"] = null;

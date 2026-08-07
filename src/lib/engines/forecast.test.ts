@@ -17,7 +17,7 @@ vi.mock("@/lib/llm/provider", () => ({
   LlmError: class extends Error {},
 }));
 
-const { forecastMessage } = await import("@/lib/engines/forecast");
+const { forecastMessage, stripLeadingFraming } = await import("@/lib/engines/forecast");
 
 const DIRECT = "You didn't send the dates. Send them today so I can finish my part.";
 
@@ -91,5 +91,27 @@ describe("forecastMessage masking interception", () => {
 
     const result = await forecastMessage({ message: DIRECT });
     expect(result.misreadings.map((m) => m.likelihood)).toEqual([90, 50, 10]);
+  });
+});
+
+describe("stripLeadingFraming", () => {
+  it("removes the framing the interface already supplies", () => {
+    expect(stripLeadingFraming("they may read this as blaming them for the delay")).toBe(
+      "blaming them for the delay",
+    );
+    expect(stripLeadingFraming("They might read it as: impatience")).toBe("impatience");
+    expect(stripLeadingFraming("The reader could interpret this as rudeness")).toBe(
+      "rudeness",
+    );
+  });
+
+  it("leaves a bare noun phrase alone", () => {
+    expect(stripLeadingFraming("blaming them for the delay")).toBe(
+      "blaming them for the delay",
+    );
+  });
+
+  it("does not strip text down to nothing", () => {
+    expect(stripLeadingFraming("they may read this as")).toBe("they may read this as");
   });
 });
