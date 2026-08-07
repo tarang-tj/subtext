@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Local audit artefacts
 audit-output/
+
+demo-frames/
+demo-output/
