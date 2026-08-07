@@ -40,7 +40,9 @@ A language model can be *asked* not to hedge and will hedge anyway; it has read 
 
 The distinction the whole product turns on: **adding explicit intent is self-advocacy. Adding hedges is masking.** When the guard fires, the user sees the block and the phrases it caught, rather than the softened text. A refusal you can see is worth more than a promise in a README.
 
-Verified by 13 tests in [`masking-guard.test.ts`](src/lib/engines/masking-guard.test.ts).
+Verified by 18 tests: 13 on the guard in [`masking-guard.test.ts`](src/lib/engines/masking-guard.test.ts), and 5 in [`forecast.test.ts`](src/lib/engines/forecast.test.ts) proving the guard is actually wired into the engine, so a softened revision returned by a live model is intercepted and never reaches the caller.
+
+Both were mutation-tested: bypassing the guard turns the suite red, restoring it turns it green. A green check that cannot fail is not evidence of anything.
 
 ## Designed to be usable, specifically
 
@@ -78,11 +80,13 @@ No account, no database, no analytics, no telemetry. Message text is sent to the
 
 ```bash
 npm install
-cp .env.example .env.local     # add a free key from https://aistudio.google.com/apikey
+cp .env.example .env.local     # add a free key from https://console.groq.com/keys
 npm run dev
 ```
 
-Subtext defaults to Gemini's free tier specifically so that a teacher, a judge, or a teenager can clone this and have it working without a billing account. `ANTHROPIC_API_KEY` is supported as an alternative; the provider seam is in `src/lib/llm/provider.ts`.
+Subtext defaults to Groq's free tier specifically so that a teacher, a judge, or a teenager can clone this and have it working without a billing account or a card. Gemini and Anthropic are supported behind the same seam, in `src/lib/llm/provider.ts`.
+
+The key is read in exactly one module, which carries a `server-only` import so that importing it from a client component fails the build instead of quietly publishing the key. No variable is prefixed `NEXT_PUBLIC_`, `.env.local` is gitignored, and provider error bodies pass through a redaction helper before they are returned to the browser.
 
 ```bash
 npm test          # masking guard tests

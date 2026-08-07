@@ -56,7 +56,9 @@ A language model can be asked not to hedge and will hedge anyway; it has read an
 - "send me the dates. To be clear, I am not annoyed, I need them to plan my half" is **allowed**. It added information and subtracted no force.
 - "Hope you're well! Quick question:" wrapped around an unchanged sentence is **blocked**. The core survived; the padding is still masking.
 
-Adding explicit intent is self-advocacy. Adding hedges is masking. When the guard fires the user sees the block and the exact phrases it caught, not the softened text. A refusal you can see is worth more than a promise in a README. Thirteen tests cover it.
+Adding explicit intent is self-advocacy. Adding hedges is masking. When the guard fires the user sees the block and the exact phrases it caught, not the softened text. A refusal you can see is worth more than a promise in a README.
+
+Eighteen tests cover it: thirteen on the guard itself, and five proving it is actually wired into the path that matters, so that a softened revision coming back from a live model call is intercepted and never reaches the caller. We mutation-tested that: bypassing the guard turns the suite red, restoring it turns it green. A green check that cannot fail is not evidence.
 
 ### How neurodivergent users were involved, honestly
 
@@ -85,7 +87,7 @@ No account, no database, no analytics, no telemetry. Message text goes to the mo
 
 ### Built with
 
-TypeScript, Next.js 16, React 19, Gemini (free tier, so anyone can run it without a billing account), Vitest, Vercel.
+TypeScript, Next.js 16, React 19, Groq (free tier, so anyone can run it without a billing account or a card), Vitest, Vercel.
 
 ---
 
